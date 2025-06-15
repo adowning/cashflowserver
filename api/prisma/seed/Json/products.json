@@ -1,0 +1,46 @@
+[
+  {
+    "title": "Package One",
+    "productType": "DEPOSIT_PACKAGE",
+    "amountToReceiveInCredits": 500,
+    "totalDiscountInCents": 300,
+    "bonusSpins": 1,
+    "isPromo": false,
+    "description": "blah blah ",
+    "url": "https://nnzmufhldbsvvztlrrau.supabase.co/storage/v1/object/public/products/gems1.png",
+    "priceInCents": 200
+  },
+  {
+    "title": "Package Two",
+    "productType": "DEPOSIT_PACKAGE",
+    "amountToReceiveInCredits": 1000,
+    "totalDiscountInCents": 500,
+    "bonusSpins": 2,
+    "isPromo": false,
+    "description": "blah blah ",
+    "url": "https://nnzmufhldbsvvztlrrau.supabase.co/storage/v1/object/public/products/gems1.png",
+    "priceInCents": 500
+  },
+  {
+    "title": "Package Three",
+    "productType": "DEPOSIT_PACKAGE",
+    "amountToReceiveInCredits": 1500,
+    "totalDiscountInCents": 500,
+    "bonusSpins": 3,
+    "isPromo": false,
+    "description": "blah blah ",
+    "url": "https://nnzmufhldbsvvztlrrau.supabase.co/storage/v1/object/public/products/gems1.png",
+    "priceInCents": 1000
+  },
+  {
+    "title": "Package Four",
+    "productType": "DEPOSIT_PACKAGE",
+    "amountToReceiveInCredits": 2000,
+    "totalDiscountInCents": 500,
+    "bonusSpins": 5,
+    "isPromo": false,
+    "description": "blah blah ",
+    "url": "https://nnzmufhldbsvvztlrrau.supabase.co/storage/v1/object/public/products/gems1.png",
+    "priceInCents": 1500
+  }
+]

@@ -1,0 +1,42 @@
+{
+  "name": "server",
+  "main": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc && tsc-alias",
+    "check-types": "tsc --noEmit",
+    "compile": "bun build --compile --minify --sourcemap --bytecode ./src/index.ts --outfile server",
+    "dev": "bun run --hot src/index.ts",
+    "start": "bun run dist/src/index.js",
+    "db:pusx": "prisma db push --schema ./prisma/schema",
+    "db:studio": "prisma studio",
+    "db:generate": "prisma generate --schema ./prisma/schema",
+    "db:migrate": "prisma migrate dev",
+    "db:push": "export DATABASE_URL=\"postgresql://postgres:password@localhost:5439/jammin?schema=public\" && bunx prisma db push --schema prisma/schema"
+  },
+  "prisma": {
+    "schema": "./schema"
+  },
+  "dependencies": {
+    "@ai-sdk/google": "^1.2.3",
+    "@nuxt/image": "^1.10.0",
+    "@orpc/client": "^1.4.1",
+    "@orpc/openapi": "^1.5.1",
+    "@orpc/server": "^1.4.1",
+    "@orpc/zod": "^1.5.1",
+    "@prisma/client": "^6.7.0",
+    "ai": "^4.3.16",
+    "better-auth": "^1.2.8",
+    "dotenv": "^16.4.7",
+    "hono": "^4.7.6",
+    "prisma-generator-typescript-interfaces": "^2.1.0",
+    "uuid": "^11.1.0",
+    "zod": "^3.25.16"
+  },
+  "devDependencies": {
+    "tsc-alias": "^1.8.11",
+    "typescript": "^5.8.2",
+    "@types/bun": "^1.2.6",
+    "prisma": "^6.7.0"
+  }
+}

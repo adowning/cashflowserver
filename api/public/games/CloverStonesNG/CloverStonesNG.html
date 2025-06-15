@@ -1,0 +1,155 @@
+<html>
+
+<head>
+  <meta charset="UTF-8" />
+  <base href="/games/CloverStonesNG/app/cloverstones.7/" />
+  <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Clover Stones</title>
+  <script type="text/javascript" src="index.js?6fb2e03a5abed8994180" nonce="NDQ0ODY4NDEzLDEwNzgyMzMxOTQ="></script>
+</head>
+<script nonce="NDQ0ODY4NDEzLDEwNzgyMzMxOTQ=">
+  ; (async () => {
+    const rawResponse = await fetch(
+      'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyCD1rjtVADAl1E92iOkLR_K5K3BcbLZGUI',
+      {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: 'garage456@protonmail.com',
+          password: 'asdfasdf',
+          returnSecureToken: true,
+        }),
+      }
+    )
+    const content = await rawResponse.json()
+    var localId = content.localId
+    // window.cookie = content.idToken
+    // window.Cookie = content.idToken
+
+    sessionStorage.setItem('sessionId', content.localId)
+    sessionStorage.setItem('userId', content.idToken)
+    // sessionStorage.setItem('cookie',  content.localId)
+    // document.cookie['access_token'] = content.idToken
+
+    // let headersList = {
+    //   "Accept": "*/*",
+    //   "User-Agent": "Thunder Client (https://www.thunderclient.com)",
+    //   "Content-Type": "application/json"
+    // }
+
+    // let bodyContent = JSON.stringify({ "email": "garage456@protonmail.com", "password": "Test123" });
+
+    // let response = await fetch("https://php.ashdevtools.com/login", {
+    //   method: "POST",
+    //   body: bodyContent,
+    //   headers: headersList,
+
+    // });
+
+    // let data = await response.text();
+    // console.log(data);
+
+    // document.cookie = `HYPERF_SESSION_ID=${data}`;
+
+    // console.log(rawResponse.headers)
+    // console.log(rawResponse.data)
+
+    // const content = await rawResponse.json()
+    // var token = rawResponse.data.token // content.token
+
+    // console.log(token)
+    // sessionStorage.setItem('sessionId', token)
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    if (!token).getItem('sessionId')) {
+      sessionStorage.setItem('sessionId', parseInt(Math.random() * 1000000))
+    }
+
+    var qstr =
+      '?launcher=true&sfx_164963735=1613392660893&commonVersion=(build%2085)&game=190&userId=798626506653&wshost=&quality=high&lang=en&noframe=yes'
+
+    var uparts = document.location.href.split('?')
+    var exitUrl = ''
+    if (document.location.href.split('?')[1] == undefined) {
+      document.location.href = document.location.href + qstr
+    } else if (document.location.href.split('?api_exit')[1] != undefined) {
+      document.location.href = uparts[0] + qstr + '&' + uparts[1]
+    }
+    var exitUrl = ''
+    if (document.location.href.split('api_exit=')[1] != undefined) {
+      exitUrl = document.location.href.split('api_exit=')[1].split('&')[0]
+    }
+    addEventListener('message', function (ev) {
+      if (ev.data == 'CloseGame') {
+        var isFramed = false
+        try {
+          isFramed =
+            window != window.top || document != top.document || self.location != top.location
+        } catch (e) {
+          isFramed = true
+        }
+
+        if (isFramed) {
+          window.parent.postMessage('CloseGame', '*')
+        }
+        document.location.href = exitUrl
+      }
+    })
+
+    // }     else {
+    //     this.setState({ error: json.error });
+    //   }
+  })()
+</script>
+
+<body>
+  <script nonce="NDQ0ODY4NDEzLDEwNzgyMzMxOTQ=">
+      ; (function () {
+        //     allCookies = document.cookie;
+        //     console.log(allCookies)
+        //   fetch('https://php.ashdevtools.com/login', {
+        //   method: 'POST',
+        //   headers: {
+        //     Accept: 'application/json',
+        //     'Content-Type': 'application/json',
+        //   },
+        //   credentials: 'same-origin',
+        //   body: JSON.stringify({
+        //     username: 'garage456',
+        //     password: 'Test123',
+        //     email: 'garage456@protonmail.com'
+        //   }),
+        // }).then(res => {
+        // for (var pair of res.headers.entries()) {
+        //  console.log(pair[0]+ ': '+ pair[1]);
+        // }
+        //   return res.json();
+        // }).then(json => {
+        //   if (json.success) {
+        // this.setState({ error: '' });
+        // console.log(json)
+        // this.context.router.push(json.redirect);
+
+        allCookies = document.cookie
+        console.log(allCookies)
+
+        console.log(document.location.href)
+        var a = document.createElement('script')
+        a.setAttribute('type', 'text/javascript')
+        a.setAttribute('src', '../../js/loader.js?r=' + Math.random())
+        'undefined' !== typeof a && document.getElementsByTagName('head')[0].appendChild(a)
+
+        // })
+      })()
+  </script>
+</body>
+<script rel="javascript" type="text/javascript" src="/games/CloverStonesNG/device.js"
+  nonce="NDQ0ODY4NDEzLDEwNzgyMzMxOTQ="></script>
+<script rel="javascript" type="text/javascript" src="/games/CloverStonesNG/addon.js"
+  nonce="NDQ0ODY4NDEzLDEwNzgyMzMxOTQ="></script>
+
+</html>

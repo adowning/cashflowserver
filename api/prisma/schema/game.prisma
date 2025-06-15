@@ -1,0 +1,205 @@
+model Game {
+  id                   String             @id @default(cuid())
+  name                 String
+  title                String
+  goldsvetData         Json?              @map("goldsvet_data")
+  description          String?
+  supportedProviders   GameProviderName[] @map("supported_providers")
+  category             GameCategory
+  tags                 String[]
+  isActive             Boolean            @default(true) @map("is_active")
+  thumbnailUrl         String?            @map("thumbnail_url")
+  bannerUrl            String?            @map("banner_url")
+  meta                 Json?
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
+  featured             Boolean            @default(false)
+  providerName         String?            @map("provider_name")
+  totalWagered         Int                @default(0) @map("total_wagered")
+  totalWon             Int                @default(0) @map("total_won")
+  gameProviderId       String?            @map("game_provider_id")
+  operatorId           String?            @map("operator_id")
+  tournamentDirectives Json?              @map("tournament_directives")
+  status               Boolean            @default(true)
+  checked              Boolean            @default(false)
+  targetRtp            Int?               @map("target_rtp")
+  tournamentGames      TournamentGames[]
+  gameLaunchLinks      GameLaunchLink[]
+  gameSessions         GameSession[]
+  gameProvider         GameProvider?      @relation(fields: [gameProviderId], references: [id])
+  operator             Operator?          @relation(fields: [operatorId], references: [id])
+
+  @@map("games")
+}
+
+model GameSession {
+  id                      String        @id @default(cuid())
+  isActive                Boolean       @default(false) @map("is_active")
+  sessionData             Json?         @map("session_data")
+  authSessionId           String?       @map("auth_session_id")
+  currencyId              String?       @map("currency_id")
+  startedAt               DateTime      @default(now()) @map("started_at")
+  endTime                 DateTime?     @map("end_time")
+  startTime               DateTime?     @map("start_time")
+  ipAddress               String?       @map("ip_address")
+  startingBalance         Int?          @default(0) @map("starting_balance")
+  startingTotalXp         Int?          @default(0) @map("starting_total_xp")
+  userAgent               String?       @map("user_agent")
+  createdAt               DateTime      @default(now()) @map("created_at")
+  updatedAt               DateTime      @updatedAt @map("updated_at")
+  totalWagered            Int           @default(0) @map("total_wagered")
+  totalWon                Int           @default(0) @map("total_won")
+  userId                  String        @map("user_id")
+  gameId                  String        @map("game_id")
+  gameName                  String?        @map("game_name")
+  rtgToken                String?       @map("rtg_token")
+  rtgFingerPrint          String?       @map("rtg_finger_print")
+   phpGameData Json? @map("php_game_data") 
+  profileId               String?       @map("profile_id")
+
+  game                    Game          @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  refferenceToUserProfile UserProfile   @relation("UserGameSessions", fields: [userId], references: [id], onDelete: Cascade)
+  spins                   GameSpin[]
+  userProfile             UserProfile[]
+  @@unique (name: "userId_gameName_isActive", [userId, gameName, isActive])
+
+  @@map("game_sessions")
+}
+
+model GameSpin {
+  id             String      @id @default(cuid())
+  spinData       Json?       @map("spin_data")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  grossWinAmount Int         @default(0) @map("gross_win_amount")
+  currencyId     String?     @map("currency_id")
+  spinNumber     Int         @default(0) @map("spin_number")
+  gameSessionId  String      @map("game_session_id")
+  wagerAmount    Int         @default(0) @map("wager_amount")
+  sessionId      String      @map("session_id")
+  timeStamp      DateTime    @map("time_stamp")
+  gameSession    GameSession @relation(fields: [gameSessionId], references: [id], onDelete: Cascade)
+
+  // Jackpot relations
+  // jackpotContributions JackpotContribution[]
+  // jackpotWin           JackpotWin?
+  JackpotContribution JackpotContribution[]
+  JackpotWin          JackpotWin?
+
+  @@map("game_spins")
+}
+
+model GameProvider {
+  id              String           @id @default(cuid())
+  name            String           @unique
+  displayName     String?          @map("display_name")
+  rgsBaseUrl      String           @map("rgs_base_url")
+  settingsPath    String?          @map("settings_path")
+  spinPath        String?          @map("spin_path")
+  resolveBetPath  String?          @map("resolve_bet_path")
+  providerRoundId String?          @map("provider_round_id")
+  authType        ProviderAuthType @default(API_KEY) @map("auth_type")
+  apiKey          String?          @map("api_key")
+  apiSecret       String?          @map("api_secret")
+  publicKey       String?          @map("public_key")
+  privateKeyRef   String?          @map("private_key_ref")
+  configJson      Json?            @default("{}") @map("config_json")
+  isActive        Boolean          @default(true) @map("is_active")
+  notes           String?
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  games           Game[]
+
+  @@index([name])
+  @@index([isActive])
+  @@map("game_providers")
+}
+
+model GameLaunchLink {
+  id               String       @id @default(cuid())
+  tokenInternal    String       @unique @default(cuid()) @map("token_internal")
+  currency         String
+  playerOperatorId String?      @map("player_operator_id")
+  mode             String
+  meta             Json?
+  requestIp        String?      @map("request_ip")
+  userAgent        String?      @map("user_agent")
+  sessionUrl       String?      @unique @map("session_url")
+  state            String       @default("SESSION_INIT")
+  active           Boolean      @default(true)
+  expiresAt        DateTime?    @map("expires_at")
+  extraMeta        Json?        @map("extra_meta")
+  tokenOriginal    String?      @map("token_original")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+  userId           String       @map("user_id")
+  gameId           String       @map("game_id")
+  operatorId       String       @map("operator_id")
+  userProfileId    String?      @map("user_profile_id")
+  game             Game         @relation(fields: [gameId], references: [id], onDelete: NoAction)
+  operator         Operator     @relation(fields: [operatorId], references: [id], onDelete: NoAction)
+  userProfile      UserProfile? @relation(fields: [userProfileId], references: [id])
+
+  @@map("game_launch_links")
+}
+
+enum GameCategory {
+  FISH
+  POKER
+  SLOTS
+  TABLE_GAMES
+  LIVE_CASINO
+  SPORTSBOOK
+  VIRTUAL_SPORTS
+  LOTTERY
+  CRASH
+  OTHER
+}
+
+enum GameProviderName {
+  PRAGMATICPLAY
+  EVOPLAY
+  NETENT
+  PLAYNGO
+  RELAXGAMING
+  HACKSAW
+  BGAMING
+  SPRIBE
+  INTERNAL
+  REDTIGER
+  NETGAME
+  BIGFISHGAMES
+  CQNINE
+  NOLIMIT
+  KICKASS
+}
+
+enum ProviderAuthType {
+  API_KEY
+  OAUTH2
+  JWT_SIGN
+  CUSTOM
+  NONE
+}
+model GameBank {
+  id         String   @id @default(cuid())
+  slots      Float    @default(0.0)
+  little     Float    @default(0.0)
+  table_bank Float    @default(0.0) @map("table_bank")
+  bonus      Float    @default(0.0)
+  temp_rtp   Float?   @map("temp_rtp")
+  shop_id    String   @unique @map("shop_id")
+  shop       Shop     @relation(fields: [shop_id], references: [id])
+
+  @@map("game_banks")
+}
+
+// You will also need to add the corresponding relation to your Shop model
+model Shop {
+  // ... all your existing fields
+  id               String               @id
+  gameBanks        GameBank[]
+  userProfiles     UserProfile[]
+  percent Float
+  maxWin  Float
+@@map("shops")
+}

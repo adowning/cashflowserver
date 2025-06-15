@@ -1,0 +1,58 @@
+model UserProfile {
+  id                    String                  @id
+  createdAt             DateTime                @default(now()) @map("created_at")
+  updatedAt             DateTime                @updatedAt @map("updated_at")
+  username              String                  @unique
+  avatar                String?                 @default("avatar-10.webp")
+  cashtag               String?
+  balance               Int                     @default(0)
+  totalXpFromOperator   Int                     @default(0) @map("total_xp_from_operator")
+  activeCurrencyType    String                  @default("USD") @map("active_currency_type")
+  lastDailySpin         DateTime                @default(dbgenerated("'1970-01-01 00:00:00'::timestamp without time zone")) @map("last_daily_spin")
+  userId                String                  @unique @map("user_id")
+  isActive              Boolean                 @default(false) @map("is_active")
+  otherUserid           String?                 @map("other_userid")
+  role                  Role?                   @default(USER)
+  operatorId            String?                 @map("operator_id")
+  currentGameSessionid  String?                 @map("current_game_sessionid")
+  vipInfoId             String                  @unique @map("vip_info_id")
+  city                  String                  @default("Anytown") @map("city")
+  state                 String                  @default("USA") @map("state")
+  phpId                 String?                 @default("999") @map("php_id")
+  shopId                String?
+  shop              Shop?                 @relation(fields: [shopId], references: [id])
+  tournament            Tournament[]
+  tournamentParticipant TournamentParticipant[] 
+  tournamentReward      TournamentReward[]      @relation("TournamentWinner")
+  gameLaunchLink        GameLaunchLink[]
+  pastGameSessions      GameSession[]           @relation("UserGameSessions")
+  jackpotWins           JackpotWin[]
+  lastJackpotWon        Jackpot[]               @relation("JackpotLastWinner")
+  operatorInvitations   OperatorInvitation[]    @relation("ReceivedInvitations")
+  rebateTransactions    RebateTransaction[]
+  transactions          Transaction[]
+  currentGameSession    GameSession?            @relation(fields: [currentGameSessionid], references: [id])
+  // vipInfo               VipInfo                 @relation(fields: [vipInfoId], references: [id])
+  wallets               Wallet[]
+  vipInfo               VipInfo                 @relation(fields: [vipInfoid], references: [id])
+  vipInfoid             String                  @unique
+  @@map("user_profiles")
+}
+
+model VipInfo {
+  id                    String       @id @default(uuid())
+  createdAt             DateTime     @default(now()) @map("created_at")
+  updatedAt             DateTime     @updatedAt @map("updated_at")
+  userId                String?      @unique @map("user_id")
+  level                 Int          @default(0)
+  currentLevelXp        Int          @default(0) @map("current_level_xp")
+  totalXp               Int          @default(0) @map("total_xp")
+  dailyBonusClaimedAt   DateTime?    @map("daily_bonus_claimed_at")
+  weeklyBonusClaimedAt  DateTime?    @map("weekly_bonus_claimed_at")
+  monthlyBonusClaimedAt DateTime?    @map("monthly_bonus_claimed_at")
+  cashbackPercentage    Int          @default(0) @map("cashback_percentage")
+  userProfile           UserProfile?
+  userProfileId         String?
+
+  @@map("vip_infos")
+}

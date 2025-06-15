@@ -1,0 +1,105 @@
+model Operator {
+  id               String               @id
+  name             String               @unique
+  operatorSecret   String               @map("operator_secret")
+  operatorAccess   String               @map("operator_access")
+  callbackUrl      String               @map("callback_url")
+  active           Boolean              @default(true)
+  permissions      KeyMode[]
+  ips              String[]
+  description      String?
+  lastUsedAt       DateTime?            @map("last_used_at")
+  createdAt        DateTime             @default(now()) @map("created_at")
+  updatedAt        DateTime             @map("updated_at")
+  ownerId          String?              @map("owner_id")
+  acceptedPayments PaymentMethod[]      @map("accepted_payments")
+  gameLaunchLinks  GameLaunchLink[]
+  games            Game[]
+  invitations      OperatorInvitation[]
+  products         Product[]
+  transactions     Transaction[]
+  wallets          Wallet[]
+
+  @@map("operators")
+}
+
+model OperatorInvitation {
+  id            String      @id @default(cuid())
+  operatorId    String      @map("operator_id")
+  username      String
+  role          Role        @default(USER)
+  token         String      @unique @default(uuid())
+  expiresAt     DateTime    @map("expires_at")
+  acceptedAt    DateTime?   @map("accepted_at")
+  invitedById   String      @map("invited_by_id")
+  userProfileId String?     @map("user_profile_id")
+  operator      Operator    @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  invitedUser   UserProfile @relation("ReceivedInvitations", fields: [username], references: [username])
+
+  @@index([operatorId])
+  @@index([username])
+  @@index([token])
+  @@map("operator_invitations")
+}
+
+model Product {
+  id                       String        @id @default(cuid())
+  title                    String        @default("default")
+  description              String        @default("default")
+  url                      String        @default("default")
+  iconUrl                  String?       @default("default") @map("icon_url")
+  productType              String        @default("bundle") @map("product_type")
+  bonusCode                String?       @default("") @map("bonus_code")
+  bonusTotalInCredits      Int           @default(0) @map("bonus_total_in_credits")
+  isActive                 Boolean?      @map("is_active")
+  priceInCents             Int           @default(0) @map("price_in_cents")
+  amountToReceiveInCredits Int           @default(0) @map("amount_to_receive_in_credits")
+  bestValue                Int           @default(0) @map("best_value")
+  discountInCents          Int           @default(0) @map("discount_in_cents")
+  bonusSpins               Int           @default(0) @map("bonus_spins")
+  isPromo                  Boolean?      @default(false) @map("is_promo")
+  totalDiscountInCents     Int           @default(0) @map("total_discount_in_cents")
+  shopId                   String?       @map("shop_id")
+  createdAt                DateTime      @default(now()) @map("created_at")
+  updatedAt                DateTime?     @updatedAt @map("updated_at")
+  transactionId            String?       @map("transaction_id")
+  operator                 Operator?     @relation(fields: [shopId], references: [id])
+  Transaction              Transaction?  @relation(fields: [transactionId], references: [id])
+  transactions             Transaction[] @relation("TransactionProduct")
+
+  @@map("products")
+}
+
+enum PaymentMethod {
+  INSTORE_CASH
+  INSTORE_CARD
+  CASH_APP
+}
+
+enum Role {
+  USER
+  ADMIN
+  VIP
+  MODERATOR
+  SYSTEM
+  OWNER
+  MEMBER
+  OPERATOR
+  SUPPORT_AGENT
+}
+
+enum KeyMode {
+  read
+  write
+  upload
+  manage_users
+  manage_settings
+  launch_game
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  INACTIVE
+}

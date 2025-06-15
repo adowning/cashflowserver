@@ -1,0 +1,222 @@
+<!doctype html>
+<html style="background: black" translate="no" class="notranslate">
+  <head>
+    <title>Loading Game...</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="google" content="notranslate" />
+    <meta name="format-detection" content="telephone=no" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+      }
+      .loading-icon {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        margin: auto;
+        width: 80px;
+        height: 80px;
+      }
+    </style>
+  </head>
+  <body>
+    <img class="loading-icon" src="/images/stars/star0.avif" />
+
+    <script id="bridgeScript" type="text/javascript" crossorigin=""></script>
+
+    <script type="text/javascript">
+      ;(function () {
+        let authToken = null
+        let authUserId = null
+        let isAuthTokenReceived = false
+        let isBridgeScriptLoaded = false
+        let localPreconfig = {} // Temporary holder for the config
+
+        window.addEventListener('message', function receiveAuthToken(event) {
+          // IMPORTANT: In production, replace '*' with your Vue app's origin
+          // if (event.origin !== 'http://localhost:your_vue_port') return;
+          if (event.data && event.data.type === 'SET_AUTH_TOKEN') {
+            authToken = event.data.token
+            authUserId = event.data.userId
+            isAuthTokenReceived = true
+            console.log('[RTG Loader] Auth token received.')
+            tryInitializeBridge()
+            // window.removeEventListener('message', receiveAuthToken) // Process only once
+          } else {
+            console.log('event listener message >>. ', event)
+          }
+        })
+        window.addEventListener('message', console.log(event))
+        window.com = window.com || {}
+        window.com.casino = window.com.casino || {}
+        const casino = window.com.casino
+        const urlParams = new URLSearchParams(window.location.search)
+
+        // --- Default & URL Parameter Parsing ---
+        const gameId = urlParams.get('gameName').replace('RTG', '') // Fallback, but should be provided
+        console.log(gameId)
+        const lang = urlParams.get('lang') || 'en'
+        const currency = urlParams.get('currency') || 'USD'
+        const operator = urlParams.get('operator') || 'redtiger'
+        const provider = urlParams.get('provider') || 'kronos' // From original config
+        const depositUrl = urlParams.get('depositUrl') || '/wallet/deposit'
+        const lobbyUrl = urlParams.get('lobbyUrl') || '/'
+        const mode = urlParams.get('mode') || 'real'
+
+        // CDN Paths
+        casino.cdn =
+          urlParams.get('gameCdnBase') || `https://cdn-eu.cloudedge.info/all/games/slots/${gameId}/`
+        casino.baseCdn = urlParams.get('baseCdnPath') || 'https://cdn-eu.cloudedge.info/all/games/'
+        casino.barsPath = urlParams.get('barsPath') || `${casino.baseCdn}bars-next/`
+        casino.bridgePath = urlParams.get('bridgePath') || `${casino.baseCdn}bridge/`
+
+        // --- Build initial localPreconfig ---
+        localPreconfig = {
+          bridge: {
+            postParams: [],
+            feedUrl: urlParams.get('feedUrl') || `https://feed-rtg.redtiger.com/`,
+            provider: provider,
+            operator: operator,
+            timestamp: `?t=${new Date().getTime()}`,
+            notifications: {
+              inRealPlay: urlParams.get('notificationsInRealPlay') !== 'false', // default true
+              inDemoPlay: urlParams.get('notificationsInDemoPlay') === 'true', // default false
+              showUnfinishedWins: urlParams.get('notificationsShowUnfinishedWins') !== 'false', // default true
+              showUnfinishedNoWins: urlParams.get('notificationsShowUnfinishedNoWins') === 'true', // default false
+            },
+            bridgeLaunch: true,
+            currency: currency,
+            lang: lang,
+            lobbyUrl: lobbyUrl,
+            depositUrl: depositUrl,
+            mode: mode,
+            // token & userId will be filled by postMessage
+          },
+          server: {
+            rgsApi: '', // Placeholder, will be set after userId is received
+            launchParams: {
+              gameId: gameId,
+              freeroundId: urlParams.get('freeroundId') || undefined,
+              autoplay: urlParams.get('autoplay') === 'true' || undefined,
+              // Add other known launch params here, controlled by URL
+            },
+          },
+          game: {
+            namespace: 'com.casino.game',
+            preconfig: {
+              cdn: casino.cdn,
+              delayedBalanceUpdate: urlParams.get('delayedBalanceUpdate') === 'true',
+              defaultLang: lang,
+              splash: urlParams.get('splash') !== 'false',
+              hideCurrency: urlParams.get('hideCurrency') === 'true',
+              disclaimer: urlParams.get('disclaimer') || '',
+              skin: urlParams.get('skin') || 'next-name-payouts',
+              skinURL: urlParams.get('skinURL') || undefined,
+              gameType: urlParams.get('gameType') || 'slot',
+              gameAppId: gameId,
+              responsive: true,
+              // --- POTENTIAL FIX AREA ---
+              // Explicitly add feature flags, allowing URL override, defaulting to false or typical values
+              hasTurboMode: urlParams.get('hasTurboMode') === 'true' || false, // Default to false
+              addedAnticipation: urlParams.get('addedAnticipation') !== 'false', // Default to true based on original
+              hasAutoplay: urlParams.get('hasAutoplay') !== 'false', // Default to true as it's common
+              // Add any other boolean feature flags you suspect might be needed by BaseConfig
+            },
+          },
+          bars: {
+            basePath: casino.barsPath,
+            options: {
+              historySrc: `${casino.baseCdn}history/`,
+              hasGamble: urlParams.get('hasGamble') === 'true', // default false
+            },
+          },
+          bonusWheel: {
+            cdn: casino.cdn,
+            basePath: `../../scenes/bonus-wheels/{skin}/`, // Might need absolute if CDN changes
+            skin: urlParams.get('bonusWheelSkin') || 'base-wheel',
+            enabled: urlParams.get('bonusWheelEnabled') === 'true', // default false
+          },
+          analytics: {
+            gaTrackingIds: urlParams.get('gaTrackingIds')?.split(',') || [], // Default empty
+          },
+        }
+
+        // Signal parent that iframe is ready for token
+        if (window.parent && window.parent !== window) {
+          parent.postMessage('RTG_LOADER_READY', '*') // In production, specify parent origin
+        }
+
+        // --- Load bridge.min.js and then try to init ---
+        const bridgeScriptElement = document.getElementById('bridgeScript')
+        if (bridgeScriptElement) {
+          bridgeScriptElement.src = `/rtg.bridge.js?t=${new Date().getTime()}` // `${casino.bridgePath}bridge.min.js?t=${new Date().getTime()}`
+          bridgeScriptElement.onload = function () {
+            isBridgeScriptLoaded = true
+            console.log('[RTG Loader] Bridge script loaded.')
+            tryInitializeBridge()
+          }
+          bridgeScriptElement.onerror = function () {
+            console.error(
+              '[RTG Loader] Critical Error: Failed to load bridge.min.js from',
+              bridgeScriptElement.src
+            )
+            const loadingIcon = document.querySelector('.loading-icon')
+            if (loadingIcon) loadingIcon.alt = 'Error loading game (bridge script failed).'
+          }
+        } else {
+          console.error('[RTG Loader] Critical Error: Bridge script element not found in template.')
+        }
+
+        function tryInitializeBridge() {
+          if (isAuthTokenReceived && isBridgeScriptLoaded) {
+            console.log('[RTG Loader] Auth token received and bridge loaded. Initializing game.')
+
+            // Finalize preconfig with received auth data
+            localPreconfig.bridge.token = authToken
+            localPreconfig.bridge.userId = authUserId
+
+            // Construct RGS API URL now that we have authUserId
+            const rgsApiBasePath =
+              urlParams.get('rgsApiBase') ||
+              `/rpc/spin-data/${localPreconfig.bridge.operator}/platform`
+            localPreconfig.server.rgsApi = `${rgsApiBasePath}/${authToken}/${localPreconfig.server.launchParams.gameId}/`
+
+            // console.log(urlParams.get('rgsApiBase'))
+            // console.log(localPreconfig.server.rgsApi)
+
+            casino.preconfig = localPreconfig // Assign the fully prepared config
+
+            // console.log(
+            //   '[RTG Loader Template] Final Preconfig before init:',
+            //   JSON.stringify(casino.preconfig, null, 2)
+            // )
+
+            if (casino.bridge && typeof casino.bridge.init === 'function') {
+              casino.bridge.init(casino.preconfig)
+              const loadingIcon = document.querySelector('.loading-icon')
+              if (loadingIcon) loadingIcon.style.display = 'none'
+            } else {
+              console.error('[RTG Loader] Critical Error: com.casino.bridge.init is not available!')
+            }
+          } else {
+            if (!isAuthTokenReceived)
+              console.log('[RTG Loader] Waiting for auth token from parent...')
+            if (!isBridgeScriptLoaded)
+              console.log('[RTG Loader] Waiting for bridge script to load...')
+          }
+        }
+      })()
+    </script>
+  </body>
+</html>

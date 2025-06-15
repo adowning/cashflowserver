@@ -1,0 +1,55 @@
+model Jackpot {
+  id                            String                @id @default(cuid())
+  type                          JackpotType
+  currentAmountCoins            Int                   @default(0) @map("current_amount_coins")
+  seedAmountCoins               Int                   @default(0) @map("seed_amount_coins")
+  minimumBetCoins               Int                   @default(1) @map("minimum_bet_coins")
+  contributionRateBasisPoints   Int                   @default(0) @map("contribution_rate_basis_points")
+  probabilityPerMillion         Int                   @default(0) @map("probability_per_million")
+  minimumTimeBetweenWinsMinutes Int                   @default(0) @map("minimum_time_between_wins_minutes")
+  lastWonAt                     DateTime?             @map("last_won_at")
+  lastWonBy                     String?               @map("last_won_by")
+  isActive                      Boolean               @default(true) @map("is_active")
+  createdAt                     DateTime              @default(now()) @map("created_at")
+  updatedAt                     DateTime              @updatedAt @map("updated_at")
+  contributions                 JackpotContribution[]
+  wins                          JackpotWin[]
+  lastWinner                    UserProfile?          @relation("JackpotLastWinner", fields: [lastWonBy], references: [id])
+
+  @@map("jackpots")
+}
+
+model JackpotContribution {
+  id                      String   @id @default(cuid())
+  jackpotId               String   @map("jackpot_id")
+  gameSpinId              String   @map("game_spin_id")
+  contributionAmountCoins Int      @map("contribution_amount_coins")
+  createdAt               DateTime @default(now()) @map("created_at")
+  gameSpin                GameSpin @relation(fields: [gameSpinId], references: [id])
+  jackpot                 Jackpot  @relation(fields: [jackpotId], references: [id])
+
+  @@unique([jackpotId, gameSpinId])
+  @@map("jackpot_contributions")
+}
+
+model JackpotWin {
+  id             String       @id @default(cuid())
+  jackpotId      String       @map("jackpot_id")
+  winnerId       String       @map("winner_id")
+  winAmountCoins Int          @map("win_amount_coins")
+  gameSpinId     String       @unique @map("game_spin_id")
+  transactionId  String?      @map("transaction_id")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  gameSpin       GameSpin     @relation(fields: [gameSpinId], references: [id])
+  jackpot        Jackpot      @relation(fields: [jackpotId], references: [id])
+  transaction    Transaction? @relation(fields: [transactionId], references: [id])
+  winner         UserProfile  @relation(fields: [winnerId], references: [id])
+
+  @@map("jackpot_wins")
+}
+
+enum JackpotType {
+  MINOR
+  MAJOR
+  GRAND
+}

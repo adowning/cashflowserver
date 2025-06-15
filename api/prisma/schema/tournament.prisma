@@ -1,0 +1,82 @@
+model Tournament {
+  id              String                  @id @default(cuid())
+  name            String
+  description     String?
+  startTime       DateTime                @map("start_time")
+  endTime         DateTime?               @map("end_time")
+  targetScore     Int?                    @map("target_score")
+  status          TournamentStatus        @default(PENDING)
+  createdAt       DateTime                @default(now()) @map("created_at")
+  updatedAt       DateTime                @updatedAt @map("updated_at")
+  createdByid     String?                 @map("created_by_id")
+  userId          String?                 @map("user_id")
+  user            UserProfile?            @relation(fields: [userId], references: [id])
+  participants    TournamentParticipant[]
+  rewards         TournamentReward[]
+  tournamentGames TournamentGames[]
+
+  @@index([status, startTime, endTime])
+  @@map("tournaments")
+}
+
+model TournamentParticipant {
+  id           String               @id @default(cuid())
+  tournamentId String               @map("tournament_id")
+  userId       String               @map("user_id")
+  score        Int                  @default(0)
+  rank         Int?
+  joinedAt     DateTime             @default(now()) @map("joined_at")
+  gamePlays    TournamentGamePlay[]
+  tournament   Tournament           @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  user         UserProfile          @relation(fields: [userId], references: [id])
+
+  @@unique([tournamentId, userId])
+  @@index([userId])
+  @@index([tournamentId, score])
+  @@map("tournament_participants")
+}
+
+model TournamentGamePlay {
+  id                      String                @id @default(cuid())
+  tournamentParticipantId String                @map("tournament_participant_id")
+  gameId                  String                @map("game_id")
+  pointsEarned            Int                   @map("points_earned")
+  playedAt                DateTime              @default(now()) @map("played_at")
+  gameSessionId           String?               @map("game_session_id")
+  tournamentParticipant   TournamentParticipant @relation(fields: [tournamentParticipantId], references: [id], onDelete: Cascade)
+
+  @@index([tournamentParticipantId])
+  @@map("tournament_game_plays")
+}
+
+model TournamentReward {
+  id           String       @id @default(cuid())
+  tournamentId String       @map("tournament_id")
+  rank         Int
+  description  String
+  isClaimed    Boolean      @default(false) @map("is_claimed")
+  winnerId     String?      @map("winner_id")
+  tournament   Tournament   @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  winner       UserProfile? @relation("TournamentWinner", fields: [winnerId], references: [id])
+
+  @@index([tournamentId])
+  @@map("tournament_records")
+}
+
+model TournamentGames {
+  A          String
+  B          String
+  games      Game       @relation(fields: [A], references: [id], onDelete: Cascade)
+  tournament Tournament @relation(fields: [B], references: [id], onDelete: Cascade)
+
+  @@id([A, B], map: "_TournamentGames_AB_pkey")
+  @@index([B], map: "_TournamentGames_B_index")
+  @@map("tournament_games")
+}
+
+enum TournamentStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
