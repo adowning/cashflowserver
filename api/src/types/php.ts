@@ -125,6 +125,9 @@ export interface PhpApiResponse {
     freeLevel?: number;
   };
   isRespin?: boolean;
+  // Jackpot related properties
+  jackpotWin?: number;        // Amount won from a jackpot
+  jackpotType?: string;       // Type of jackpot (e.g., 'mini', 'minor', 'major', 'grand')
   // This field captures the legacy string response some clients might need.
   stringResponse?: string; 
 }

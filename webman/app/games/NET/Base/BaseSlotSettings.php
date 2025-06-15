@@ -1,5 +1,6 @@
 <?php
-namespace app\games\NET\NET\Base;
+
+namespace app\games\NET\Base;
 
 // Base class for slot game settings
 class BaseSlotSettings
@@ -72,6 +73,39 @@ class BaseSlotSettings
     public $slotCurrency = '';
     public $AllBet = 0; // Its main setter GetSpinSettings is gone. Server.php might need to set this if methods like GetRandomPay are kept.
 
+    /**
+     * Log an internal error and exit
+     * 
+     * @param string $errcode The error code
+     * @param bool $silent If true, don't output anything, just log
+     */
+    public function InternalError($errcode, $silent = false)
+    {
+        $strLog = "\n";
+        $strLog .= ('{"responseEvent":"error","responseType":"' . $errcode . '","serverResponse":"InternalError","request":' . json_encode($_REQUEST) . ',"requestRaw":' . file_get_contents('php://input') . '}');
+        $strLog .= "\n";
+        $strLog .= ' ############################################### ';
+        $strLog .= "\n";
+        
+        $logFile = storage_path('logs/') . $this->slotId . 'Internal.log';
+        $slg = file_exists($logFile) ? file_get_contents($logFile) : '';
+        file_put_contents($logFile, $slg . $strLog);
+        
+        if (!$silent) {
+            exit('');
+        }
+    }
+    
+    /**
+     * Log a silent internal error (doesn't exit)
+     * 
+     * @param string $errcode The error code
+     */
+    public function InternalErrorSilent($errcode)
+    {
+        $this->InternalError($errcode, true);
+    }
+    
     public function __construct($gameStateData)
     {
         $this->playerId = $gameStateData['playerId'] ?? null;
@@ -222,37 +256,7 @@ class BaseSlotSettings
         return $this->count_balance;
     }
 
-    public function InternalError($errcode)
-    {
-        // Simplified error logging, consider a proper logging solution for production
-        $logMessage = sprintf(
-            "[%s] InternalError: %s, Request: %s, RawInput: %s
-",
-            date('Y-m-d H:i:s'),
-            $errcode,
-            json_encode($_REQUEST),
-            file_get_contents('php://input')
-        );
-        $logPath = __DIR__ . '/../logs/' . ($this->slotId ?: 'general') . '_error.log'; // Log to a common logs dir
-        error_log($logMessage, 3, $logPath);
-        // In a real API, you'd throw an exception or return a JSON error response, not exit.
-        // For now, to match potential old behavior:
-        exit(json_encode(['responseEvent' => 'error', 'responseType' => $errcode, 'serverResponse' => 'InternalError']));
-    }
-
-    public function InternalErrorSilent($errcode)
-    {
-        $logMessage = sprintf(
-            "[%s] InternalErrorSilent: %s, Request: %s, RawInput: %s
-",
-            date('Y-m-d H:i:s'),
-            $errcode,
-            json_encode($_REQUEST),
-            file_get_contents('php://input')
-        );
-        $logPath = __DIR__ . '/../logs/' . ($this->slotId ?: 'general') . '_error.log';
-        error_log($logMessage, 3, $logPath);
-    }
+    // Error handling methods are now defined at the beginning of the class
 
     public function SetBank($slotState = '', $sum, $slotEvent = '')
     {
@@ -290,4 +294,3 @@ class BaseSlotSettings
         return rand(1, max(1, (int)$this->WinGamble));
     }
 }
-?>

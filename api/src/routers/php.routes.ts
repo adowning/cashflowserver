@@ -115,37 +115,151 @@ export async function handlePhpCall(context: CreateMyContextOptions){
         const denomination = (postData as any)?.bet_denomination || (postData as any)?.denomination || 0.01;
         const allBetInCoins = betLevel * 20;
 
-        if (action === 'spin' && wallet.balance < allBetInCoins) {
-            throw new Error('Insufficient funds.');
+        if (action === 'spin') {
+            // Check funds before proceeding with the spin
+            if (wallet.balance < allBetInCoins) {
+                throw new Error('Insufficient funds.');
+            }
+
+            // Handle any pre-spin logic here (e.g., deducting bet, updating history)
+            // The PHP side is now stateless for these operations
         }
 
         const desiredWinType = action === 'spin' ? determineWinType(game, shop, gameBank) : 'none';
         const goldsvetData = typeof game.goldsvetData === 'object' && game.goldsvetData !== null ? game.goldsvetData : {};
 
+        // Prepare game state for PHP, excluding history and jackpot management
         const gameStateForPhp: PhpGameStateData = {
             action: action as any,
             desiredWinType: desiredWinType,
-            postData: postData,
+            postData: {
+                ...postData,
+                // Remove any history or jackpot related data from postData
+                history: undefined,
+                jackpots: undefined
+            },
             playerId: userProfile.phpId as string,
             balance: wallet.balance,
             bank: gameBank.slots,
-            gameData: (gameSession.phpGameData as Record<string, any>) ?? {},
-            user: { operatorId: userProfile.operatorId, balance: userProfile.balance },
-            shop: { percent: shop.percent, maxWin: shop.maxWin },
-            game: { name: game.name, goldsvetData: goldsvetData },
+            gameData: {
+                ...(gameSession.phpGameData as Record<string, any> ?? {}),
+                // Ensure no history is passed to PHP
+                history: undefined
+            },
+            user: { 
+                operatorId: userProfile.operatorId, 
+                balance: userProfile.balance,
+                // Add any additional user data needed for the game
+                id: userProfile.id
+            },
+            shop: { 
+                percent: shop.percent, 
+                maxWin: shop.maxWin,
+                // Add any additional shop data needed for the game
+                id: shop.id
+            },
+            game: { 
+                name: game.name, 
+                goldsvetData: goldsvetData,
+                // Add any additional game data needed
+                id: game.id
+            },
         };
         // console.log(gameStateForPhp)
         const phpResult = await callPhpEngine(gameName as string, gameStateForPhp);
 
         if (action === 'spin') {
-            const [, updatedWallet] = await prisma.$transaction([
-                prisma.transaction.create({ data: { type: TransactionType.BET, amount: -allBetInCoins, userProfileId: userProfile.id, walletId: wallet.id, relatedGameId: game.id, description: `Bet on ${game.title}`, balanceBefore: wallet.balance, balanceAfter: wallet.balance - allBetInCoins } }),
-                ...(phpResult.totalWin > 0 ? [prisma.transaction.create({ data: { type: TransactionType.WIN, amount: phpResult.totalWin, userProfileId: userProfile.id, walletId: wallet.id, relatedGameId: game.id, description: `Win on ${game.title}`, balanceBefore: wallet.balance - allBetInCoins, balanceAfter: wallet.balance - allBetInCoins + phpResult.totalWin }})] : []),
-                prisma.wallet.update({ where: { id: wallet.id }, data: { balance: phpResult.newBalance } }),
-                prisma.gameSession.update({ where: { id: gameSession.id }, data: { phpGameData: phpResult.newGameData } }),
-                prisma.game.update({ where: { id: game.id }, data: { totalWagered: { increment: allBetInCoins }, totalWon: { increment: phpResult.totalWin } } }),
-                prisma.gameBank.update({ where: { id: gameBank.id }, data: { slots: phpResult.newBank } }),
+            // Process the spin result and update all necessary records in a transaction
+            const [betTransaction, winTransaction, updatedWallet, updatedSession, updatedGame, updatedBank] = await prisma.$transaction([
+                // Create bet transaction
+                prisma.transaction.create({ 
+                    data: { 
+                        type: TransactionType.BET, 
+                        amount: -allBetInCoins, 
+                        userProfileId: userProfile.id, 
+                        walletId: wallet.id, 
+                        relatedGameId: game.id, 
+                        description: `Bet on ${game.title}`, 
+                        balanceBefore: wallet.balance, 
+                        balanceAfter: wallet.balance - allBetInCoins 
+                    } 
+                }),
+                
+                // Create win transaction if there's a win
+                ...(phpResult.totalWin > 0 ? [prisma.transaction.create({ 
+                    data: { 
+                        type: TransactionType.WIN, 
+                        amount: phpResult.totalWin, 
+                        userProfileId: userProfile.id, 
+                        walletId: wallet.id, 
+                        relatedGameId: game.id, 
+                        description: `Win on ${game.title}`, 
+                        balanceBefore: wallet.balance - allBetInCoins, 
+                        balanceAfter: wallet.balance - allBetInCoins + phpResult.totalWin 
+                    }
+                })] : []),
+                
+                // Update wallet balance
+                prisma.wallet.update({ 
+                    where: { id: wallet.id }, 
+                    data: { 
+                        balance: phpResult.newBalance 
+                    } 
+                }),
+                
+                // Update game session with new game data (excluding history)
+                prisma.gameSession.update({ 
+                    where: { id: gameSession.id }, 
+                    data: { 
+                        phpGameData: {
+                            ...(phpResult.newGameData || {}),
+                            // Ensure we don't store history in the session
+                            history: undefined
+                        },
+                        // Update last played timestamp
+                        lastPlayedAt: new Date()
+                    } 
+                }),
+                
+                // Update game statistics
+                prisma.game.update({ 
+                    where: { id: game.id }, 
+                    data: { 
+                        totalWagered: { increment: allBetInCoins }, 
+                        totalWon: { increment: phpResult.totalWin },
+                        // Update last played timestamp
+                        updatedAt: new Date()
+                    } 
+                }),
+                
+                // Update game bank
+                prisma.gameBank.update({ 
+                    where: { id: gameBank.id }, 
+                    data: { 
+                        slots: phpResult.newBank,
+                        // Update timestamp
+                        updatedAt: new Date()
+                    } 
+                }),
+                
+                // Add any additional updates here (e.g., leaderboards, achievements)
             ]);
+            
+            // Handle jackpot updates after the main transaction
+            if (phpResult.jackpotWin) {
+                try {
+                    await handleJackpotWin({
+                        userId: userProfile.id,
+                        gameId: game.id,
+                        amount: phpResult.jackpotWin,
+                        jackpotType: phpResult.jackpotType,
+                        walletId: wallet.id
+                    });
+                } catch (error) {
+                    console.error('Error processing jackpot win:', error);
+                    // Don't fail the main transaction if jackpot update fails
+                }
+            }
             return {
                 success: true, message: 'Spin processed successfully',
                 data: {
